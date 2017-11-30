@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -16,6 +17,11 @@ import java.util.Calendar;
 
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -51,8 +57,8 @@ public class Main2Activity extends AppCompatActivity implements View.OnClickList
         setContentView(R.layout.activity_main2);
         Icono6=(ImageView) findViewById(R.id.imageView11) ;
         Icono7=(ImageView) findViewById(R.id.imageView12) ;
-         Nombre=(EditText) findViewById(R.id.Introducir_Apellido)   ;
-         Apellido= (EditText) findViewById(R.id.Introducir_Nombre) ;
+        Nombre=(EditText) findViewById(R.id.Introducir_Apellido)   ;
+        Apellido= (EditText) findViewById(R.id.Introducir_Nombre) ;
         Texto1=(TextView) findViewById(R.id.Texto1);
         Icono1=(ImageView) findViewById(R.id.imageView6);
         Icono2=(ImageView) findViewById(R.id.imageView7);
@@ -65,51 +71,93 @@ public class Main2Activity extends AppCompatActivity implements View.OnClickList
         Fecha_Nacimiento=(EditText)findViewById(R.id.Introducir_Fecha);
         Fecha_Nacimiento.setOnClickListener(this);
         Repetir_Contraseña=(EditText)findViewById(R.id.Introducir_Repetir);
-        Registrarse= (Button)findViewById((R.id.Boton_Registrarse));
+        Registrarse = (Button)findViewById((R.id.Boton_Registrarse));
 
 
        Registrarse.setOnClickListener(new View.OnClickListener() {
            @Override
            public void onClick(View view) {
                validar();
-               String username, email, password, nombre, apellido, fechaDeNacimiento, formadeRegistro;
+               String username, email, password, nombre, apellido, fechaDeNacimiento, formaDeRegistro;
                nombre = Nombre.getText().toString();
                email = Email.getText().toString();
-               password = Contraseña.getText().toString();
+              password = Contraseña.getText().toString();
                username = Usuario.getText().toString();
                apellido = Apellido.getText().toString();
-               Fecha_Nacimiento.setText(recuperar_dia + "/" + recuperar_mes + "/" + recuperar_año);
+               Fecha_Nacimiento.setText(recuperar_mes + "/" + recuperar_dia + "/" + recuperar_año);
                fechaDeNacimiento = Fecha_Nacimiento.getText().toString();
-               formadeRegistro = "Android";
+               formaDeRegistro ="Android";
+
+               Log.i("Email", email);
+               Log.i("Username", username);
+               Log.i("Contraseña", password);
+               Log.i("Nombre", nombre);
+               Log.i("Apellido", apellido);
+               Log.i("Fecha De Nacimiento", fechaDeNacimiento);
+               Log.i("Forma De Registro", formaDeRegistro);
+
                if (admitir == true) {
                    Fecha_Nacimiento.setText(recuperar_dia + "/" + recuperar_mes + "/" + recuperar_año);
-                    sendRequestNetwork();
-                           ;
+                   Usuarios usuario = new Usuarios(
+                           email,
+                           username,
+                           password,
+                           nombre,
+                           apellido,
+                           fechaDeNacimiento,
+                           formaDeRegistro
+
+                   );
+                   sendRequestNetwork(usuario);
+
                }
            }
        });
 
     }
 
-    private void sendRequestNetwork() {
-        Retrofit retrofit=new Retrofit.Builder().baseUrl("https://intense-lake-39874.herokuapp.com").addConverterFactory(GsonConverterFactory.create()).build();
-      final UserClient service=retrofit.create(UserClient.class);
-        Usuarios usuario=new Usuarios( Nombre.getText().toString(), Email.getText().toString(), Contraseña.getText().toString(), Usuario.getText().toString(), Apellido.getText().toString(), Fecha_Nacimiento.getText().toString(), "Android");
-        Call<Usuarios> createCall=service.create(usuario);
-        createCall.enqueue(new Callback<Usuarios>() {
+    private void sendRequestNetwork(Usuarios usuario) {
+    OkHttpClient.Builder okhttpClientBuilder=new OkHttpClient.Builder();
+        HttpLoggingInterceptor loggin=new HttpLoggingInterceptor();
+        loggin.setLevel(HttpLoggingInterceptor.Level.BODY);
+        okhttpClientBuilder.addInterceptor(loggin);
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://intense-lake-39874.herokuapp.com")
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okhttpClientBuilder.build());
+
+        Retrofit retrofit = builder.build();
+
+
+        UserClient service = retrofit.create(UserClient.class);
+        Call<Usuarios> call = service.create(usuario);
+
+        call.enqueue(new Callback<Usuarios>() {
             @Override
             public void onResponse(Call<Usuarios> call, Response<Usuarios> response) {
-                Usuarios newUsuario= response.body();
-                Toast.makeText(Main2Activity.this,"Usuario Registrado!",Toast.LENGTH_SHORT).show();
+
+                if (response.isSuccessful()) {
+                        Toast.makeText(getApplicationContext(),"Usuario registrado! "+response.body().getMessage(),Toast.LENGTH_LONG).show();
+                } else
+                {
+
+                    try
+                    { JSONArray jObjError = new JSONArray(response.errorBody().string());
+                        Toast.makeText(getApplicationContext(),"Algo fallo... "+jObjError.getJSONObject(0).getString("mensaje"),Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(getApplicationContext(),"Algo fallo... "+ e.getMessage() , Toast.LENGTH_LONG).show();
+                    }
+                }
 
             }
 
             @Override
             public void onFailure(Call<Usuarios> call, Throwable t) {
-                    Toast.makeText(Main2Activity.this,"Algo fallo..",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Main2Activity.this,"Algo fallo...",Toast.LENGTH_SHORT).show();
 
             }
         });
+
     }
 
 
@@ -194,7 +242,7 @@ public class Main2Activity extends AppCompatActivity implements View.OnClickList
             admitir=false;
         }
         int edad1 = año_hoy-recuperar_año;
-        if (edad1<18){
+        if (edad1<19){
             Fecha_Nacimiento.setError(getString(R.string.error_edad));
             Fecha_Nacimiento.requestFocus();
             admitir=false;
