@@ -20,7 +20,7 @@ import android.widget.Toast;
 
 public class Main3Activity extends AppCompatActivity
 
-        implements NavigationView.OnNavigationItemSelectedListener,FragmentTareas.OnFragmentInteractionListener,FragmentAyuda.OnFragmentInteractionListener,FragmentConfiguracion.OnFragmentInteractionListener, Fragment_VerTareas.OnFragmentInteractionListener,FragmentCerrarSesion.OnFragmentInteractionListener {
+        implements NavigationView.OnNavigationItemSelectedListener,FragmentTareas.OnFragmentInteractionListener,FragmentAyuda.OnFragmentInteractionListener,FragmentConfiguracion.OnFragmentInteractionListener, Fragment_VerTareas.OnFragmentInteractionListener {
     TextView Texto1;
     ImageView Flecha;
     @Override
